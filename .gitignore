@@ -6,3 +6,4 @@ Release/
 *.map
 *.su
 .metadata/
+.vscode/

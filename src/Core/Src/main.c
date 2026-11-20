@@ -22,6 +22,10 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "traffic_light.h"
+#include "button.h"
+#include "dht20.h"
+#include "lcd.h"
 #include "scheduler.h"
 #include "software_timer.h"
 /* USER CODE END Includes */
@@ -104,10 +108,19 @@ int main(void)
   MX_I2C1_Init();
   MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
+  uint8_t found_i2c[8] = {0};
+  uint8_t num_i2c = dht20_scan_i2c(found_i2c, 8); /* Dat breakpoint xem dia chi LCD */
+  (void)num_i2c;
+  traffic_init();
+  button_init();
+  dht20_init();
+  lcd_init(LCD_DEFAULT_ADDR_7BIT);
   SCH_Init();
   SCH_Add_Task(LED_Toggle_A, 100, 0);
   SCH_Add_Task(LED_Toggle_B, 0, 500);
   HAL_TIM_Base_Start_IT(&htim2);
+  SCH_Add_Task(button_read,     0, 1);   /* 10 ms  */
+  SCH_Add_Task(dht20_read_task, 0, 10);  /* 100 ms (tu dong kich do moi 2 s) */
   /* USER CODE END 2 */
 
   /* Infinite loop */
