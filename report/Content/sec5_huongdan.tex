@@ -1,0 +1,92 @@
+\section{Hướng dẫn sử dụng mã nguồn}
+
+\subsection{Cấu trúc thư mục dự án}
+Toàn bộ mã nguồn dự án được tổ chức khoa học, tuân theo cấu trúc dự án chuẩn của STM32CubeIDE:
+
+\begin{lstlisting}[style=mystyle, caption={Cấu trúc cây thư mục mã nguồn dự án}]
+CO3009_2413713_2413648_2413763/
++-- src/
+|   +-- Core/
+|   |   +-- Inc/
+|   |   |   +-- button.h             # Giao dien driver nut nhan & chong doi
+|   |   |   +-- dht20.h              # Giao dien driver cam bien DHT20
+|   |   |   +-- fsm_automatic.h      # Giao dien FSM che do tu dong
+|   |   |   +-- fsm_config.h         # Hang so cau hinh nut nhan & thoi gian
+|   |   |   +-- fsm_manual.h         # Giao dien FSM che do bang tay
+|   |   |   +-- fsm_mode_manager.h   # Giao dien FSM quan ly chuyen che do
+|   |   |   +-- fsm_tuning.h         # Giao dien FSM che do chinh thoi gian
+|   |   |   +-- global.h             # Bien trang thai dung chung toan he thong
+|   |   |   +-- lcd.h                # Giao dien driver man hinh LCD I2C
+|   |   |   +-- main.h               # Dinh nghia chan GPIO sinh boi CubeMX
+|   |   |   +-- scheduler.h          # Giao dien bo dinh thoi hop tac O(1)
+|   |   |   +-- software_timer.h     # Giao dien bo dem thoi gian phan mem
+|   |   |   +-- traffic_light.h      # Giao dien dieu khien 2 module den
+|   |   +-- Src/
+|   |       +-- button.c             # Hien thuc chong doi & nhan giu
+|   |       +-- dht20.c              # Hien thuc doc du lieu DHT20
+|   |       +-- fsm_automatic.c      # Hien thuc logic chu ky tu dong
+|   |       +-- fsm_manual.c         # Hien thuc logic dieu khien thu cong
+|   |       +-- fsm_mode_manager.c   # Hien thuc chuyen doi an toan giua cac che do
+|   |       +-- fsm_tuning.c         # Hien thuc giao dien & chuan hoa thoi gian
+|   |       +-- global.c             # Khai bao bien toan cuc
+|   |       +-- lcd.c                # Hien thuc xuat ky tu len LCD I2C
+|   |       +-- main.c               # Khoi tao ngoai vi & vong lap dispatch
+|   |       +-- scheduler.c          # Hien thuc hang doi tac vu O(1)
+|   |       +-- software_timer.c     # Hien thuc timer phan mem
+|   |       +-- traffic_light.c      # Hien thuc anh xa chan bang chan tri den
+|   +-- BTL_CO3009.ioc               # File cau hinh STM32CubeMX
++-- report/                          # Ma nguon bao cao LaTeX
++-- README.md                        # Huong dan van hanh nhanh
+\end{lstlisting}
+
+\subsection{Quy trình biên dịch và nạp chương trình}
+Để biên dịch và nạp mã nguồn xuống kit phát triển XNUCLEO-F103RB, người dùng thực hiện theo các bước sau:
+\begin{enumerate}
+    \item \textbf{Clone kho mã nguồn}:
+    \begin{lstlisting}[language=bash]
+git clone https://github.com/phamtruong04/CO3009_2413713_2413648_2413763.git
+    \end{lstlisting}
+    \item \textbf{Mở dự án trong STM32CubeIDE}:
+    \begin{itemize}
+        \item Khởi động STM32CubeIDE.
+        \item Chọn menu \texttt{File} $\rightarrow$ \texttt{Open Projects from File System...}.
+        \item Nhấn \texttt{Directory...} và trỏ tới thư mục \texttt{src} của dự án, sau đó nhấn \texttt{Finish}.
+    \end{itemize}
+    \item \textbf{Kiểm tra cấu hình Debug và Phần cứng}:
+    \begin{itemize}
+        \item Mở file \texttt{BTL\_CO3009.ioc}, xác nhận mục \texttt{System Core} $\rightarrow$ \texttt{SYS} $\rightarrow$ \texttt{Debug} đã chọn \textbf{Serial Wire} (bắt buộc để không mất kết nối nạp mạch ST-Link).
+        \item Kết nối mạch XNUCLEO-F103RB với máy tính thông qua cáp Micro-USB.
+    \end{itemize}
+    \item \textbf{Biên dịch và nạp chương trình}:
+    \begin{itemize}
+        \item Nhấn phím tắt \texttt{Ctrl + B} (hoặc biểu tượng cây búa) để tiến hành Build dự án. Đảm bảo kết quả hiển thị \texttt{0 errors, 0 warnings}.
+        \item Nhấn biểu tượng \texttt{Run} (hoặc phím tắt \texttt{Ctrl + F11}) để nạp file \texttt{.elf} trực tiếp vào bộ nhớ Flash của vi điều khiển.
+    \end{itemize}
+\end{enumerate}
+
+\subsection{Hướng dẫn vận hành hệ thống}
+Sau khi nạp chương trình thành công hoặc nhấn nút \texttt{RESET} (nút màu đen trên mạch):
+\begin{enumerate}
+    \item \textbf{Khởi động}:
+    \begin{itemize}
+        \item Hệ thống tự động vào chế độ \textbf{Tự động (Auto Mode)}.
+        \item Đèn giao thông bắt đầu pha 1: Tuyến 1 Đỏ, Tuyến 2 Xanh.
+        \item Màn hình LCD hiển thị dòng 1 là trạng thái pha đèn (\texttt{"AUTO R1:RD R2:GN"}), dòng 2 hiển thị nhiệt độ và độ ẩm cập nhật từ cảm biến DHT20.
+    \end{itemize}
+    \item \textbf{Chuyển sang chế độ Bằng tay (Manual Mode)}:
+    \begin{itemize}
+        \item Nhấn \textbf{Nút 1 (D7)} một lần. Cả hai tuyến lập tức chuyển về Đỏ (All-Red an toàn). Màn hình LCD dòng 1 hiển thị \texttt{"MAN  R1:RD R2:RD"}.
+        \item Nhấn \textbf{Nút 2 (D8)}: Hệ thống chuyển tuần tự qua từng bước (Tuyến 1 Xanh $\rightarrow$ Tuyến 1 Vàng $\rightarrow$ All-Red $\rightarrow$ Tuyến 2 Xanh $\rightarrow$ Tuyến 2 Vàng $\rightarrow$ All-Red).
+    \end{itemize}
+    \item \textbf{Chuyển sang chế độ Chỉnh thời gian (Tuning Mode)}:
+    \begin{itemize}
+        \item Khi đang ở chế độ Manual, nhấn tiếp \textbf{Nút 1 (D7)}. Hệ thống vào chế độ Tuning.
+        \item Dòng 1 LCD hiển thị trường thời gian cần chỉnh (mặc định bắt đầu từ \texttt{SET RED:  030s}).
+        \item Nhấn \textbf{Nút 2 (D8)} để lần lượt chuyển qua lại giữa việc chỉnh thời gian đèn ĐỎ, đèn XANH, đèn VÀNG.
+        \item Nhấn \textbf{Nút 3 (D9)} để \textbf{Giảm} thời gian; nhấn \textbf{Nút 4 (D10)} để \textbf{Tăng} thời gian tương ứng. Các nút hỗ trợ nhấn giữ để tăng/giảm liên tục.
+    \end{itemize}
+    \item \textbf{Quay trở lại chế độ Tự động với cấu hình mới}:
+    \begin{itemize}
+        \item Nhấn tiếp \textbf{Nút 1 (D7)}. Hệ thống tự động kiểm tra, chuẩn hóa ràng buộc an toàn, lưu các thông số mới và bắt đầu chu kỳ đèn tự động với thời gian vừa chỉnh.
+    \end{itemize}
+\end{enumerate}

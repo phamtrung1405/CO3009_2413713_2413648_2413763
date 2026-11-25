@@ -1,0 +1,60 @@
+\section{Tổng kết}
+
+\subsection{Kết quả đạt được}
+Hệ thống đèn giao thông 2 tuyến đường trên mạch XNUCLEO-F103RB đã được hoàn thiện đầy đủ các chức năng theo đúng yêu cầu thiết kế ban đầu. Bảng~\ref{tab:evaluation_results} tổng hợp kết quả kiểm thử và đánh giá mức độ hoàn thành dự án:
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabularx}{\textwidth}{|c|X|c|p{4.5cm}|}
+\hline
+\textbf{STT} & \textbf{Yêu cầu kỹ thuật} & \textbf{Mức độ} & \textbf{Ghi chú / Đánh giá kiểm thử} \\ \hline
+1 & Bộ định thời hợp tác (Scheduler) đạt độ phức tạp $\mathcal{O}(1)$ trong Timer ISR, đầy đủ các hàm \texttt{Add}, \texttt{Delete}, \texttt{Update}, \texttt{Dispatch}. & Hoàn thành & Chạy ổn định ở tick 10ms, không phát hiện hiện tượng quá tải hoặc trễ chu kỳ. \\ \hline
+2 & Hỗ trợ cơ chế cho các One-shot Task (chạy một lần tự xóa). & Hoàn thành & Tự động giải phóng ô nhớ trong \texttt{SCH\_Dispatch\_Tasks()} khi \texttt{Period == 0}. \\ \hline
+3 & Chế độ vận hành tự động (\texttt{APP\_MODE\_AUTO}). & Hoàn thành & Chu kỳ đèn chuyển đổi chuẩn xác, có pha đệm an toàn All-Red giữa hai tuyến đường. \\ \hline
+4 & Chế độ điều khiển thủ công bằng tay (\texttt{APP\_MODE\_MANUAL}). & Hoàn thành & Điều phối qua nút bấm theo 7 bước tuần tự, đi qua pha All-Red an toàn trước khi chuyển luồng. \\ \hline
+5 & Chế độ cấu hình thời gian (\texttt{APP\_MODE\_TUNING}). & Hoàn thành & Cho phép tinh chỉnh thời gian Đỏ -- Xanh -- Vàng trực tiếp qua nút bấm; tự động kiểm tra chuẩn hóa dữ liệu. \\ \hline
+6 & Thu thập dữ liệu môi trường và hiển thị LCD. & Hoàn thành & Đọc cảm biến DHT20 mỗi 1s, hiển thị thông số nhiệt độ, độ ẩm chính xác cùng trạng thái pha đèn. \\ \hline
+7 & Kiến trúc máy trạng thái phân tầng, độc lập phần cứng. & Hoàn thành & Các file \texttt{fsm\_*.c} không gọi trực tiếp bất kỳ hàm HAL nào; bọc kín qua API của tầng Driver. \\ \hline
+\end{tabularx}
+\caption{Bảng đánh giá mức độ hoàn thành các yêu cầu của dự án}
+\label{tab:evaluation_results}
+\end{table}
+
+\subsection{Hạn chế và hướng phát triển}
+\textbf{Hạn chế hiện tại}:
+\begin{itemize}
+    \item Các giá trị cài đặt thời gian trong chế độ Tuning chỉ lưu trong biến RAM, do đó sẽ trở về giá trị mặc định khi mất nguồn hoặc reset phần cứng.
+    \item Chu kỳ đèn giao thông hiện tại là chu kỳ cố định, chưa tự động thay đổi theo mật độ lưu lượng xe cộ trên từng tuyến đường.
+\end{itemize}
+
+\textbf{Hướng phát triển trong tương lai}:
+\begin{itemize}
+    \item Ghi các thông số cấu hình thời gian vào bộ nhớ Flash nội của STM32 hoặc EEPROM ngoài để lưu giữ tham số khi mất nguồn.
+    \item Tích hợp giao tiếp UART / Wi-Fi để truyền dữ liệu trạng thái (telemetry) về trung tâm giám sát điều hành thông minh từ xa.
+    \item Kết hợp camera hoặc cảm biến đo khoảng cách/cảm ứng từ để nhận diện mật độ giao thông, từ đó tự động điều chỉnh linh hoạt thời gian đèn xanh theo thuật toán điều khiển thích nghi.
+\end{itemize}
+
+\subsection{Phân công và đóng góp của các thành viên}
+Cả ba thành viên trong nhóm đều tham gia tích cực với tinh thần trách nhiệm cao, hoàn thành toàn bộ khối lượng công việc được giao đúng tiến độ:
+
+\begin{itemize}
+    \item \textbf{Phạm Nghĩa Trung (MSSV: 2413713) -- Core System \& Scheduler Engineer}:
+    \begin{itemize}
+        \item Quản lý kho mã nguồn GitHub, cấu hình hệ thống và môi trường phát triển.
+        \item Hiện thực lõi Scheduler $\mathcal{O}(1)$, cơ chế hỗ trợ One-shot Task và module \texttt{software\_timer}.
+        \item Mức độ đóng góp: \textbf{100\%}.
+    \end{itemize}
+    \item \textbf{Nguyễn Tiến Minh Trí (MSSV: 2413648) -- Peripheral \& Driver Engineer}:
+    \begin{itemize}
+        \item Khởi tạo dự án STM32CubeIDE, cấu hình bộ định thời TIM2 (ngắt 10ms), giao tiếp I2C1 và hệ thống chân GPIO.
+        \item Hiện thực các module điều khiển phần cứng: \texttt{button.c/.h} (chống dội, nhấn giữ), \texttt{traffic\_light.c/.h}, \texttt{dht20.c/.h} và \texttt{lcd.c/.h}.
+        \item Mức độ đóng góp: \textbf{100\%}.
+    \end{itemize}
+    \item \textbf{Dương Đức Tuấn (MSSV: 2413763) -- Application \& Logic Engineer}:
+    \begin{itemize}
+        \item Thiết kế và lập trình 3 máy trạng thái: \texttt{fsm\_automatic}, \texttt{fsm\_manual}, \texttt{fsm\_tuning} cùng bộ quản lý chế độ \texttt{fsm\_mode\_manager}.
+        \item Hiện thực thuật toán kiểm tra ràng buộc thời gian an toàn và giải thuật chống xung đột hai tuyến cùng xanh.
+        \item Mức độ đóng góp: \textbf{100\%}.
+    \end{itemize}
+\end{itemize}
