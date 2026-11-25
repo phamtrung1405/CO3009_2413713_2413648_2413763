@@ -45,7 +45,7 @@ static void normalize_timing(void)
     }
 }
 
-static void render_tuning_screen(void)
+static void render_tuning_value(void)
 {
     char line[17];
     const char *field_name = "RED";
@@ -68,8 +68,13 @@ static void render_tuning_screen(void)
     }
 
     (void)snprintf(line, sizeof(line), "%s TIME:%3us", field_name, (unsigned int)value);
-    lcd_print_line(0U, "MODE: TUNING");
     lcd_print_line(1U, line);
+}
+
+static void render_tuning_screen(void)
+{
+    lcd_print_line(0U, "TUNING  ALL-RED ");
+    render_tuning_value();
 }
 
 static void adjust_selected_field(int8_t delta)
@@ -145,6 +150,6 @@ void fsm_tuning_run(void)
     }
 
     if (redraw != 0U) {
-        render_tuning_screen();
+        render_tuning_value();
     }
 }

@@ -4,7 +4,7 @@
 #include <stdint.h>
 
 /* Dia chi 7-bit mac dinh cua module PCF8574 (cap nhat theo Buoc 3.4) */
-#define LCD_DEFAULT_ADDR_7BIT  0x27U
+#define LCD_DEFAULT_ADDR_7BIT 0x21
 #define LCD_COLS               16U
 #define LCD_ROWS               2U
 

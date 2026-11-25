@@ -8,6 +8,8 @@
 #include "traffic_light.h"
 
 #include <stdint.h>
+#include <stdio.h>
+#include <string.h>
 
 typedef enum {
     AUTO_R1_RED_R2_GREEN = 0,
@@ -21,55 +23,90 @@ typedef enum {
 
 static AutoPhase_t current_phase = AUTO_R1_RED_R2_GREEN;
 static uint8_t phase_started = 0U;
-static uint8_t environment_page = 0U;
-static uint16_t display_tick_count = 0U;
+static uint16_t env_tick_count = 0U;
+static char last_env_line[17] = "";
 
-#define AUTO_LCD_PAGE_TICKS 300U /* 300 * 10 ms = 3 seconds */
+#define AUTO_ENV_UPDATE_TICKS 100U /* 100 * 10 ms = 1 second */
 
 static const char *get_phase_text(AutoPhase_t phase)
 {
     switch (phase) {
-    case AUTO_R1_RED_R2_GREEN:  return "R1:RED  R2:GRN";
-    case AUTO_R1_RED_R2_YELLOW: return "R1:RED  R2:YEL";
-    case AUTO_R1_GREEN_R2_RED:  return "R1:GRN  R2:RED";
-    case AUTO_R1_YELLOW_R2_RED: return "R1:YEL  R2:RED";
+    case AUTO_R1_RED_R2_GREEN:  return "AUTO R1:RD R2:GN";
+    case AUTO_R1_RED_R2_YELLOW: return "AUTO R1:RD R2:YL";
+    case AUTO_R1_GREEN_R2_RED:  return "AUTO R1:GN R2:RD";
+    case AUTO_R1_YELLOW_R2_RED: return "AUTO R1:YL R2:RD";
     case AUTO_ALL_RED_AFTER_R2:
     case AUTO_ALL_RED_AFTER_R1:
-    default:                    return "R1:RED  R2:RED";
+    default:                    return "AUTO R1:RD R2:RD";
     }
 }
 
-static void render_status_page(void)
+static void render_status_line(void)
 {
-    lcd_print_line(0U, "MODE: AUTO");
-    lcd_print_line(1U, get_phase_text(current_phase));
+    lcd_print_line(0U, get_phase_text(current_phase));
 }
 
-static void render_environment_page(void)
+static void format_env_line(char out[17])
 {
     if (dht20_is_valid() == 0U) {
-        lcd_print_line(0U, "DHT20: WAITING");
-        lcd_print_line(1U, "NO VALID SAMPLE");
+        (void)snprintf(out, 17U, "T:--.-C  H:--.-%%");
         return;
     }
 
-    lcd_print_line(0U, "TEMP (C):");
-    lcd_set_cursor(0U, 9U);
-    lcd_send_float(dht20_get_temperature(), 1U);
-    lcd_send_char('C');
+    float temp = dht20_get_temperature();
+    float hum = dht20_get_humidity();
 
-    lcd_print_line(1U, "HUMIDITY:");
-    lcd_set_cursor(1U, 9U);
-    lcd_send_float(dht20_get_humidity(), 1U);
-    lcd_send_char('%');
+    int32_t t10 = (temp >= 0.0f) ? (int32_t)(temp * 10.0f + 0.5f)
+                                 : (int32_t)(temp * 10.0f - 0.5f);
+    int32_t h10 = (hum >= 0.0f) ? (int32_t)(hum * 10.0f + 0.5f) : 0;
+
+    if (t10 > 999) {
+        t10 = 999;
+    } else if (t10 < -999) {
+        t10 = -999;
+    }
+
+    if (h10 > 1000) {
+        h10 = 1000;
+    }
+
+    int32_t t_abs = (t10 < 0) ? -t10 : t10;
+    unsigned int t_int = (unsigned int)(t_abs / 10);
+    unsigned int t_frac = (unsigned int)(t_abs % 10);
+    unsigned int h_int = (unsigned int)(h10 / 10);
+    unsigned int h_frac = (unsigned int)(h10 % 10);
+
+    if (t10 < 0) {
+        if (t_int >= 10U) {
+            if (h10 >= 1000) {
+                (void)snprintf(out, 17U, "T:-%2u.%1uC H:100%% ", t_int, t_frac);
+            } else {
+                (void)snprintf(out, 17U, "T:-%2u.%1uC H:%2u.%1u%%", t_int, t_frac, h_int, h_frac);
+            }
+        } else {
+            if (h10 >= 1000) {
+                (void)snprintf(out, 17U, "T:-%1u.%1uC H:100.0%%", t_int, t_frac);
+            } else {
+                (void)snprintf(out, 17U, "T:-%1u.%1uC  H:%2u.%1u%%", t_int, t_frac, h_int, h_frac);
+            }
+        }
+    } else {
+        if (h10 >= 1000) {
+            (void)snprintf(out, 17U, "T:%2u.%1uC H:100.0%%", t_int, t_frac);
+        } else {
+            (void)snprintf(out, 17U, "T:%2u.%1uC  H:%2u.%1u%%", t_int, t_frac, h_int, h_frac);
+        }
+    }
 }
 
-static void render_current_page(void)
+static void render_env_line_if_changed(void)
 {
-    if (environment_page != 0U) {
-        render_environment_page();
-    } else {
-        render_status_page();
+    char line[17];
+    format_env_line(line);
+
+    if (strcmp(line, last_env_line) != 0) {
+        (void)memcpy(last_env_line, line, sizeof(last_env_line));
+        lcd_print_line(1U, line);
     }
 }
 
@@ -131,9 +168,7 @@ static void apply_phase(AutoPhase_t phase)
         break;
     }
 
-    if (environment_page == 0U) {
-        render_status_page();
-    }
+    render_status_line();
     setTimer(FSM_PHASE_TIMER, duration_ms);
 }
 
@@ -141,8 +176,8 @@ void fsm_automatic_init(void)
 {
     current_phase = AUTO_R1_RED_R2_GREEN;
     phase_started = 0U;
-    environment_page = 0U;
-    display_tick_count = 0U;
+    env_tick_count = AUTO_ENV_UPDATE_TICKS;
+    last_env_line[0] = '\0';
     setTimer(FSM_PHASE_TIMER, 0U);
 }
 
@@ -162,12 +197,12 @@ void fsm_automatic_run(void)
         timer_flag[FSM_PHASE_TIMER] = 0U;
         current_phase = (AutoPhase_t)(((uint32_t)current_phase + 1U) % AUTO_PHASE_COUNT);
         apply_phase(current_phase);
+        return;
     }
 
-    display_tick_count++;
-    if (display_tick_count >= AUTO_LCD_PAGE_TICKS) {
-        display_tick_count = 0U;
-        environment_page = (uint8_t)!environment_page;
-        render_current_page();
+    env_tick_count++;
+    if (env_tick_count >= AUTO_ENV_UPDATE_TICKS) {
+        env_tick_count = 0U;
+        render_env_line_if_changed();
     }
 }
